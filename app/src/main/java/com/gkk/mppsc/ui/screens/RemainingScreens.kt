@@ -833,5 +833,5 @@ fun DonateScreen(vm: MainViewModel) {
 private val OPTION_LABELS = listOf("A", "B", "C", "D")
 
 private fun Modifier.border(start: BorderStroke): Modifier = this.then(
-    Modifier.border(start.width, start.brush, RoundedCornerShape(7.dp))
+    Modifier.border(start.width, androidx.compose.ui.graphics.SolidColor(start.color), RoundedCornerShape(7.dp))
 )
