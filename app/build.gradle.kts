@@ -45,8 +45,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (hasKeystore) {
-                signingConfig = signingConfigs.getByName("release")
+            // Use release keystore if secrets are set, otherwise fall back to
+            // debug signing so the APK is always installable
+            signingConfig = if (hasKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
             }
         }
     }
