@@ -24,12 +24,9 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 3. Download gradle-wrapper.jar (not stored in repo)
-      - name: Download gradle-wrapper.jar
-        run: |
-          mkdir -p gradle/wrapper
-          curl -sL "https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \            
-          -o gradle/wrapper/gradle-wrapper.jar
+      # 3. Regenerate gradle wrapper (fixes missing gradle-wrapper.jar)
+      - name: Generate gradle wrapper
+        run: gradle wrapper --gradle-version 8.9 --distribution-type bin
 
       # 4. Grant execute permission
       - name: Grant execute permission
