@@ -78,7 +78,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val sessionPool:   StateFlow<List<Question>>       = _sessionPool.asStateFlow()
     val currentIndex:  StateFlow<Int>                  = _currentIndex.asStateFlow()
-    val answers:       StateFlow<List<AnsweredQuestion>>= _answers.asStateFlow()
+    val answers:       StateFlow<List<AnsweredQuestion>> = _answers.asStateFlow()
     val sessionActive: StateFlow<Boolean>              = _sessionActive.asStateFlow()
 
     val currentQuestion: StateFlow<Question?> = combine(_sessionPool, _currentIndex) { pool, idx ->
