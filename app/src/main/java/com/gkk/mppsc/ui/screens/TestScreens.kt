@@ -494,7 +494,7 @@ fun TestResultScreen(vm: MainViewModel, nav: NavHostController) {
                 GKKOutlineButton("Try Again", onClick = { nav.popBackStack(Route.TEST, false) }, modifier = Modifier.weight(1f))
                 GKKOutlineButton("Dashboard", onClick = { nav.popBackStack(Route.DASHBOARD, false) }, modifier = Modifier.weight(1f))
             }
-        })
+        }
         Spacer(Modifier.height(16.dp))
 
         // Review answers list
