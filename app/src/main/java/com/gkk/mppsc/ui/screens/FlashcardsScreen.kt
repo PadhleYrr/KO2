@@ -83,7 +83,7 @@ fun FlashcardsScreen(
                     }
                 }
                 Spacer(Modifier.height(14.dp))
-                GKKButton("Start Flashcards →") {
+                GKKButton("Start Flashcards →", onClick = {
                     if (selectedCats.isNotEmpty()) {
                         pool         = vm.getFlashcardPool(selectedCats.toList())
                         currentIndex = 0
@@ -91,7 +91,7 @@ fun FlashcardsScreen(
                         incorrectCount = 0
                         sessionStarted = true
                     }
-                }
+                })
             }
         } else if (currentIndex >= pool.size) {
             // ── Session complete ─────────────────────────────────────
@@ -136,17 +136,17 @@ fun FlashcardsScreen(
                         }
                     }
                     Spacer(Modifier.height(20.dp))
-                    GKKButton("New Session →") {
+                    GKKButton("New Session →", onClick = {
                         pool         = vm.getFlashcardPool(selectedCats.toList())
                         currentIndex = 0
                         correctCount = 0
                         incorrectCount = 0
                         isFlipped    = false
-                    }
+                    })
                     Spacer(Modifier.height(8.dp))
-                    GKKOutlineButton("Change Categories") {
+                    GKKOutlineButton("Change Categories", onClick = {
                         sessionStarted = false
-                    }
+                    })
                 }
             }
         } else {

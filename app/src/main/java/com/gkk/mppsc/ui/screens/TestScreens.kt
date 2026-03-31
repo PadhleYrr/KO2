@@ -97,12 +97,12 @@ fun TestHomeScreen(vm: MainViewModel, nav: NavHostController) {
                 .count { it.category in selectedCats }
             Text("$count questions selected", fontSize = 12.sp, color = c.muted)
             Spacer(Modifier.height(14.dp))
-            GKKButton("Start Test →") {
+            GKKButton("Start Test →", onClick = {
                 if (selectedCats.isNotEmpty()) {
                     vm.startTest(selectedMode, selectedCats.toList())
                     nav.navigate(Route.TEST_SESSION)
                 }
-            }
+            })
         }
         Spacer(Modifier.height(14.dp))
 
@@ -489,12 +489,12 @@ fun TestResultScreen(vm: MainViewModel, nav: NavHostController) {
 
         // Action buttons
         Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            GKKButton("Review Answers") { showReview = !showReview }
+            GKKButton("Review Answers", onClick = { showReview = !showReview })
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GKKOutlineButton("Try Again", onClick = { nav.popBackStack(Route.TEST, false) }, modifier = Modifier.weight(1f))
                 GKKOutlineButton("Dashboard", onClick = { nav.popBackStack(Route.DASHBOARD, false) }, modifier = Modifier.weight(1f))
             }
-        }
+        })
         Spacer(Modifier.height(16.dp))
 
         // Review answers list

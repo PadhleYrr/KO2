@@ -69,10 +69,10 @@ fun DailyScreen(vm: MainViewModel, nav: NavHostController) {
                     fontSize = 13.sp, color = c.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     lineHeight = 20.sp)
                 Spacer(Modifier.height(24.dp))
-                GKKButton("Start Daily 10 →") {
+                GKKButton("Start Daily 10 →", onClick = {
                     vm.startTest(TestMode.QUICK, emptyList())
                     nav.navigate(Route.TEST_SESSION)
-                }
+                })
             }
         }
     }
@@ -109,10 +109,10 @@ fun TimedScreen(vm: MainViewModel, nav: NavHostController) {
                 )
             }
             Spacer(Modifier.height(6.dp))
-            GKKButton("Start Timed Test →") {
+            GKKButton("Start Timed Test →", onClick = {
                 vm.startTest(testModes[selectedMode], emptyList())
                 nav.navigate(Route.TEST_SESSION)
-            }
+            })
         }
     }
 }
@@ -655,11 +655,11 @@ fun ReviewScreen(vm: MainViewModel) {
                         fontSize = 12.sp, color = c.muted, modifier = Modifier.padding(top = 4.dp))
                 }
                 Spacer(Modifier.height(14.dp))
-                GKKButton("Next Review →") {
+                GKKButton("Next Review →", onClick = {
                     chosen = null
                     currentDueIdx++
                     if (currentDueIdx >= due.size) currentDueIdx = due.size
-                }
+                })
             }
         }
     }
