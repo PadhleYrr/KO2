@@ -1,0 +1,21 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Signing — NEVER commit these
+*.jks
+*.keystore
+release.jks
+
+# Google services — add your own
+# app/google-services.json  ← uncomment this line after adding your file
+
+# Build outputs
+app/build/
