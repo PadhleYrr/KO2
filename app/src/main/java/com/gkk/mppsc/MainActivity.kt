@@ -104,10 +104,10 @@ fun GKKNavHost(
         startDestination = Route.DASHBOARD,
         modifier         = modifier
     ) {
-        composable(Route.DASHBOARD)       { DashboardScreen() }
+        composable(Route.DASHBOARD)       { DashboardScreen(vm = vm, nav = nav) }
         composable(Route.SYLLABUS)        { SyllabusScreen(vm) }
         composable(Route.NOTES)           { NotesScreen(vm) }
-        composable(Route.FLASHCARDS)      { FlashcardsScreen() }
+        composable(Route.FLASHCARDS)      { FlashcardsScreen(vm = vm) }
         composable(Route.TEST)            { TestHomeScreen(vm, nav) }
         composable(Route.TEST_SESSION)    { TestSessionScreen(vm, nav) }
         composable(Route.TEST_RESULT)     { TestResultScreen(vm, nav) }
