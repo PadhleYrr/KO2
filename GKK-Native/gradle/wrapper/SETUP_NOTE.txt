@@ -1,5 +1,0 @@
-The gradle-wrapper.jar file is not included in this zip.
-When you open this project in Android Studio, it will automatically
-download the correct gradle-wrapper.jar.
-
-Alternatively, run:  ./gradlew wrapper  from Android Studio's terminal.
