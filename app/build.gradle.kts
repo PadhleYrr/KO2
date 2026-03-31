@@ -82,6 +82,13 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // DataStore (used by PrefsRepository)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    // Gson (used by ContentRepository + PrefsRepository)
+    implementation("com.google.code.gson:gson:2.11.0")
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     
     // Testing
     testImplementation("junit:junit:4.13.2")
