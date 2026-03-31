@@ -22,27 +22,35 @@ android {
         }
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "release.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("KEY_ALIAS") ?: ""
-            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    val keyAliasEnv     = System.getenv("KEY_ALIAS")
+    val hasKeystore     = !keystorePassword.isNullOrEmpty() && !keyAliasEnv.isNullOrEmpty()
+
+    if (hasKeystore) {
+        signingConfigs {
+            create("release") {
+                storeFile     = file(System.getenv("KEYSTORE_PATH") ?: "release.jks")
+                storePassword = keystorePassword
+                keyAlias      = keyAliasEnv
+                keyPassword   = System.getenv("KEY_PASSWORD") ?: ""
+            }
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled   = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
