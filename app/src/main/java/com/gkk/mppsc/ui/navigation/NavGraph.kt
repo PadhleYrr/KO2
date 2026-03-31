@@ -53,6 +53,7 @@ sealed class NavItem(
     // Progress section
     object WeakAreas     : NavItem(Route.WEAK_AREAS,      "Weak Areas",      Icons.Default.TrendingDown)
     object Progress      : NavItem(Route.PROGRESS,        "My Progress",     Icons.Default.TrendingUp)
+    object Review        : NavItem(Route.REVIEW,          "SRS Review",      Icons.Default.Psychology, badgeText = null)
 
     // Other section
     object Donate        : NavItem(Route.DONATE,          "Support Us",      Icons.Default.Favorite)
@@ -81,7 +82,8 @@ val sidebarSections = listOf(
     )),
     NavSection("Progress", listOf(
         NavItem.WeakAreas,
-        NavItem.Progress
+        NavItem.Progress,
+        NavItem.Review
     )),
     NavSection("Other", listOf(
         NavItem.Donate,
