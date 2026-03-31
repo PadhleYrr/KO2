@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code (Updated to v4)
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -24,16 +24,23 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 3. Grant execute permission (One time, right after checkout)
+      # 3. Download gradle-wrapper.jar (not stored in repo)
+      - name: Download gradle-wrapper.jar
+        run: |
+          mkdir -p gradle/wrapper
+          curl -sL "https://github.com/gradle/gradle/raw/v8.7.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o gradle/wrapper/gradle-wrapper.jar
+
+      # 4. Grant execute permission
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      # 4. Decode keystore from secret
+      # 5. Decode keystore from secret
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/release.jks
 
-      # 5. Build release APK
+      # 6. Build release APK
       - name: Build release APK
         env:
           KEYSTORE_PATH:     ${{ github.workspace }}/release.jks
@@ -42,15 +49,14 @@ jobs:
           KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
-      # 6. Rename APK with version
+      # 7. Rename APK with version
       - name: Rename APK
         run: |
-          # Works for both build.gradle and build.gradle.kts
-          VERSION=$(grep 'versionName' app/build.gradle* | sed 's/.*"\(.*\)".*/\1/' | sed "s/.*'\(.*\)'.*/\1/" | head -1)
+          VERSION=$(grep 'versionName' app/build.gradle* | sed 's/.*"\(.*\)".*/\1/' | head -1)
           cp app/build/outputs/apk/release/app-release.apk \
              app/build/outputs/apk/release/GKK-MPPSC-v${VERSION}.apk
 
-      # 7. Upload APK as artifact
+      # 8. Upload APK as artifact
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -58,7 +64,7 @@ jobs:
           path: app/build/outputs/apk/release/GKK-MPPSC-*.apk
           retention-days: 30
 
-      # 8. Create GitHub Release (only on version tags)
+      # 9. Create GitHub Release (only on version tags)
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
