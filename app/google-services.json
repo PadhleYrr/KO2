@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:77589429691:android:REPLACE_WITH_NEW_APP_ID",
+        "mobilesdk_app_id": "1:77589429691:android:bc9b1754c40d5510c0589e",
         "android_client_info": {
           "package_name": "com.padhleyrr.mppsc"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "REPLACE_WITH_YOUR_RESTRICTED_API_KEY"
+          "current_key": "AIzaSyAJoOz73MrNt2pEVPf5Gh9BQ5r7yWz2l-Y"
         }
       ],
       "services": {
