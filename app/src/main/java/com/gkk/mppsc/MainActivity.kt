@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,7 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.gkk.mppsc.data.repository.AuthRepository
 import com.gkk.mppsc.ui.navigation.AuthNavGraph
 import com.gkk.mppsc.ui.screens.DashboardScreen
-import com.gkk.mppsc.ui.theme.GKKTheme
+import com.gkk.mppsc.ui.theme.GKKThemeWrapper
 import com.gkk.mppsc.viewmodel.AuthViewModel
 import com.gkk.mppsc.viewmodel.MainViewModel
 
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            GKKTheme {
+            GKKThemeWrapper {
                 RootNavigation(authRepository)
             }
         }
@@ -36,7 +37,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun RootNavigation(authRepository: AuthRepository) {
     val navController = rememberNavController()
-    val authViewModel = AuthViewModel(authRepository)
+    val authViewModel = remember { AuthViewModel(authRepository) }
     val authState = authViewModel.uiState.collectAsState().value
     
     if (authState.isAuthenticated) {
