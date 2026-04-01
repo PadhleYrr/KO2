@@ -3,6 +3,7 @@ package com.gkk.mppsc.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gkk.mppsc.data.repository.AuthRepository
+import com.gkk.mppsc.data.repository.AuthState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -33,7 +34,7 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         viewModelScope.launch {
             authRepository.authState.collect { authState ->
                 _uiState.value = _uiState.value.copy(
-                    isAuthenticated = authState.toString() == "Authenticated"
+                    isAuthenticated = authState is AuthState.Authenticated
                 )
             }
         }
