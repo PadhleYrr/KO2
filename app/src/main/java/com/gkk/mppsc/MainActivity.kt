@@ -47,7 +47,7 @@ fun RootNavigation(authRepository: AuthRepository) {
         // Show auth screens
         AuthNavGraph(
             navController = navController,
-            viewModel = authViewModel,
+            authViewModel = authViewModel,
             onAuthSuccess = {
                 // Auth successful - app will recompose and show main app
             }
