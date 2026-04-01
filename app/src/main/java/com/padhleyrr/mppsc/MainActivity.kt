@@ -28,6 +28,7 @@ import com.padhleyrr.mppsc.ui.navigation.NavItem
 import com.padhleyrr.mppsc.ui.navigation.Route
 import com.padhleyrr.mppsc.ui.navigation.sidebarSections
 import com.padhleyrr.mppsc.ui.screens.*
+import com.padhleyrr.mppsc.ui.theme.DMSans
 import com.padhleyrr.mppsc.ui.theme.GKKThemeWrapper
 import com.padhleyrr.mppsc.ui.theme.Syne
 import com.padhleyrr.mppsc.ui.theme.gkkColors
@@ -37,7 +38,6 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    // FIX: Hoist both ViewModels at Activity level so they survive recomposition
     private val mainViewModel: MainViewModel by viewModels()
     private val authRepository by lazy { AuthRepository() }
     private val authViewModel  by lazy { AuthViewModel(authRepository) }
@@ -56,35 +56,21 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  ROOT — switches between Auth flow and Main app
-//  FIX: Single authState drives the switch. No nested
-//       navControllers leaking across the auth/main boundary.
-// ══════════════════════════════════════════════════════════════
 @Composable
-fun RootNavigation(
-    authViewModel: AuthViewModel,
-    mainViewModel: MainViewModel
-) {
+fun RootNavigation(authViewModel: AuthViewModel, mainViewModel: MainViewModel) {
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
-
     if (authState.isAuthenticated) {
-        // FIX: pass hoisted mainViewModel — no viewModel() call inside
         MainAppNavigation(mainViewModel = mainViewModel)
     } else {
         val authNavController = rememberNavController()
         AuthNavGraph(
             navController = authNavController,
             authViewModel = authViewModel,
-            onAuthSuccess = { /* isAuthenticated state above handles the switch */ }
+            onAuthSuccess = {}
         )
     }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  MAIN APP — drawer + top bar + nav host
-// ══════════════════════════════════════════════════════════════
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppNavigation(mainViewModel: MainViewModel) {
     val navController  = rememberNavController()
@@ -99,13 +85,28 @@ fun MainAppNavigation(mainViewModel: MainViewModel) {
         .flatMap { it.items }
         .find { it.route == currentRoute }?.label ?: "Dashboard"
 
+    val pageSubtitle = when (currentRoute) {
+        Route.DASHBOARD      -> "Your complete study overview"
+        Route.NOTES          -> "Read & revise your notes"
+        Route.FLASHCARDS     -> "Quick revision cards"
+        Route.TEST           -> "Practice MCQ questions"
+        Route.DAILY          -> "10 questions a day"
+        Route.TIMED          -> "Timed mock test"
+        Route.PYQ            -> "Previous year papers"
+        Route.CURRENT_AFFAIRS-> "Stay updated"
+        Route.BOOKMARKS      -> "Your saved questions"
+        Route.WEAK_AREAS     -> "Topics to improve"
+        Route.PROGRESS       -> "Track your journey"
+        Route.REVIEW         -> "Spaced repetition review"
+        Route.SYLLABUS       -> "Complete MPPSC syllabus"
+        Route.SETTINGS       -> "Preferences & themes"
+        Route.DONATE         -> "Support the app"
+        else                 -> "GKK MPPSC"
+    }
+
     ModalNavigationDrawer(
         drawerState     = drawerState,
         gesturesEnabled = true,
-        // FIX: drawerContent calls GKKSidebar which owns its own ModalDrawerSheet.
-        //      Previously the old code was fine here, but the new version had
-        //      no ModalDrawerSheet at all inside the lambda, causing the drawer
-        //      to render with zero size and vanish.
         drawerContent   = {
             GKKSidebar(
                 currentRoute = currentRoute,
@@ -125,26 +126,106 @@ fun MainAppNavigation(mainViewModel: MainViewModel) {
             )
         }
     ) {
-        Scaffold(
-            topBar = {
-                GKKTopBar(
-                    title       = pageTitle,
-                    onMenuClick = { scope.launch { drawerState.open() } }
-                )
-            },
-            containerColor = gkkColors.bg
-        ) { innerPadding ->
+        // No Scaffold/TopAppBar — topbar is part of page content just like the web
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gkkColors.bg)
+        ) {
+            GKKTopBar(
+                title       = pageTitle,
+                subtitle    = pageSubtitle,
+                onMenuClick = { scope.launch { drawerState.open() } }
+            )
             AppNavHost(
                 navController = navController,
                 vm            = mainViewModel,
-                modifier      = Modifier.padding(innerPadding)
+                modifier      = Modifier.weight(1f)
             )
         }
     }
 }
 
 // ══════════════════════════════════════════════════════════════
-//  SIDEBAR — owns the ModalDrawerSheet (one sheet, not two)
+//  TOP BAR — matches web exactly:
+//  bg colour = page bg (not navy), Syne title, DM Sans subtitle,
+//  search box on right, hamburger on left
+// ══════════════════════════════════════════════════════════════
+@Composable
+fun GKKTopBar(
+    title:       String,
+    subtitle:    String,
+    onMenuClick: () -> Unit
+) {
+    val c = gkkColors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(c.bg)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Left: hamburger + title
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            // Hamburger ☰
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onMenuClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("☰", fontSize = 22.sp, color = c.text)
+            }
+
+            // Title + subtitle
+            Column {
+                Text(
+                    text          = title,
+                    fontFamily    = Syne,
+                    fontWeight    = FontWeight.ExtraBold,
+                    fontSize      = 22.sp,
+                    color         = c.text,
+                    maxLines      = 1
+                )
+                Text(
+                    text       = subtitle,
+                    fontFamily = DMSans,
+                    fontSize   = 13.sp,
+                    color      = c.muted,
+                    modifier   = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+
+        // Right: search box
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(c.card)
+                .border(1.dp, c.border, RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("🔍", fontSize = 13.sp)
+            Text(
+                "Search...",
+                fontFamily = DMSans,
+                fontSize   = 13.sp,
+                color      = c.muted
+            )
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SIDEBAR
 // ══════════════════════════════════════════════════════════════
 @Composable
 fun GKKSidebar(
@@ -161,7 +242,6 @@ fun GKKSidebar(
     ) {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
-            // Logo + close button
             Row(
                 modifier              = Modifier
                     .fillMaxWidth()
@@ -180,9 +260,10 @@ fun GKKSidebar(
                     )
                     Text(
                         "padhleyrr.com",
-                        fontSize = 11.sp,
-                        color    = Color.White.copy(alpha = 0.45f),
-                        modifier = Modifier.padding(top = 2.dp)
+                        fontFamily = DMSans,
+                        fontSize   = 11.sp,
+                        color      = Color.White.copy(alpha = 0.45f),
+                        modifier   = Modifier.padding(top = 2.dp)
                     )
                 }
                 Box(
@@ -205,6 +286,7 @@ fun GKKSidebar(
             sidebarSections.forEach { section ->
                 Text(
                     section.title.uppercase(),
+                    fontFamily    = DMSans,
                     fontSize      = 10.sp,
                     fontWeight    = FontWeight.Bold,
                     color         = Color.White.copy(alpha = 0.3f),
@@ -227,7 +309,6 @@ fun GKKSidebar(
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
-            // Streak pill
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -247,7 +328,12 @@ fun GKKSidebar(
                         fontSize   = 18.sp,
                         color      = Color(0xFFFFD54F)
                     )
-                    Text("day streak", fontSize = 10.sp, color = Color.White.copy(alpha = 0.45f))
+                    Text(
+                        "day streak",
+                        fontFamily = DMSans,
+                        fontSize   = 10.sp,
+                        color      = Color.White.copy(alpha = 0.45f)
+                    )
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -282,6 +368,7 @@ private fun SidebarNavItem(
         )
         Text(
             item.label,
+            fontFamily = DMSans,
             fontSize   = 13.sp,
             fontWeight = FontWeight.Medium,
             color      = if (isActive) Color.White else Color.White.copy(alpha = 0.65f),
@@ -303,6 +390,7 @@ private fun SidebarNavItem(
             ) {
                 Text(
                     badgeText,
+                    fontFamily = DMSans,
                     fontSize   = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color      = if (isUrgent) Color.White else Color.Black
@@ -310,40 +398,6 @@ private fun SidebarNavItem(
             }
         }
     }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  TOP BAR
-// ══════════════════════════════════════════════════════════════
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GKKTopBar(title: String, onMenuClick: () -> Unit) {
-    val c = gkkColors
-    TopAppBar(
-        title = {
-            Column {
-                Text(
-                    title,
-                    fontFamily = Syne,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize   = 20.sp,
-                    color      = c.text
-                )
-                Text(
-                    "Your complete study overview",
-                    fontSize = 12.sp,
-                    color    = c.muted,
-                    modifier = Modifier.padding(top = 1.dp)
-                )
-            }
-        },
-        navigationIcon = {
-            IconButton(onClick = onMenuClick) {
-                Text("☰", fontSize = 22.sp, color = c.text)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = c.bg)
-    )
 }
 
 // ══════════════════════════════════════════════════════════════
