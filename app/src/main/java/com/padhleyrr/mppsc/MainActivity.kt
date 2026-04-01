@@ -3,7 +3,6 @@ package com.padhleyrr.mppsc
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +44,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             val theme by mainViewModel.theme.collectAsStateWithLifecycle()
             GKKThemeWrapper(theme = theme) {
@@ -83,6 +81,29 @@ fun MainAppNavigation(mainViewModel: MainViewModel) {
     val streak         by mainViewModel.streak.collectAsStateWithLifecycle()
     val srsDue         by mainViewModel.srsDueCount.collectAsStateWithLifecycle()
 
+    val pageTitle = sidebarSections
+        .flatMap { it.items }
+        .find { it.route == currentRoute }?.label ?: "Dashboard"
+
+    val pageSubtitle = when (currentRoute) {
+        Route.DASHBOARD      -> "Your complete study overview"
+        Route.NOTES          -> "Read & revise your notes"
+        Route.FLASHCARDS     -> "Quick revision cards"
+        Route.TEST           -> "Practice MCQ questions"
+        Route.DAILY          -> "10 questions a day"
+        Route.TIMED          -> "Timed mock test"
+        Route.PYQ            -> "Previous year papers"
+        Route.CURRENT_AFFAIRS-> "Stay updated"
+        Route.BOOKMARKS      -> "Your saved questions"
+        Route.WEAK_AREAS     -> "Topics to improve"
+        Route.PROGRESS       -> "Track your journey"
+        Route.REVIEW         -> "Spaced repetition review"
+        Route.SYLLABUS       -> "Complete MPPSC syllabus"
+        Route.SETTINGS       -> "Preferences & themes"
+        Route.DONATE         -> "Support the app"
+        else                 -> "GKK MPPSC"
+    }
+
     ModalNavigationDrawer(
         drawerState     = drawerState,
         gesturesEnabled = true,
@@ -105,32 +126,100 @@ fun MainAppNavigation(mainViewModel: MainViewModel) {
             )
         }
     ) {
-        // No top bar at all — each screen handles its own header
-        // just like the web app. Only status bar inset applied.
-        Box(
+        // No Scaffold/TopAppBar — topbar is part of page content just like the web
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(gkkColors.bg)
-                .windowInsetsPadding(WindowInsets.statusBars)
         ) {
+            GKKTopBar(
+                title       = pageTitle,
+                subtitle    = pageSubtitle,
+                onMenuClick = { scope.launch { drawerState.open() } }
+            )
             AppNavHost(
                 navController = navController,
                 vm            = mainViewModel,
-                modifier      = Modifier.fillMaxSize()
+                modifier      = Modifier.weight(1f)
             )
-            // Floating hamburger button — always on top left
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TOP BAR — matches web exactly:
+//  bg colour = page bg (not navy), Syne title, DM Sans subtitle,
+//  search box on right, hamburger on left
+// ══════════════════════════════════════════════════════════════
+@Composable
+fun GKKTopBar(
+    title:       String,
+    subtitle:    String,
+    onMenuClick: () -> Unit
+) {
+    val c = gkkColors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(c.bg)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Left: hamburger + title
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            // Hamburger ☰
             Box(
                 modifier = Modifier
-                    .padding(start = 12.dp, top = 8.dp)
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(gkkColors.bg.copy(alpha = 0.9f))
-                    .clickable { scope.launch { drawerState.open() } }
-                    .align(Alignment.TopStart),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onMenuClick),
                 contentAlignment = Alignment.Center
             ) {
-                Text("☰", fontSize = 22.sp, color = gkkColors.text)
+                Text("☰", fontSize = 22.sp, color = c.text)
             }
+
+            // Title + subtitle
+            Column {
+                Text(
+                    text          = title,
+                    fontFamily    = Syne,
+                    fontWeight    = FontWeight.ExtraBold,
+                    fontSize      = 22.sp,
+                    color         = c.text,
+                    maxLines      = 1
+                )
+                Text(
+                    text       = subtitle,
+                    fontFamily = DMSans,
+                    fontSize   = 13.sp,
+                    color      = c.muted,
+                    modifier   = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+
+        // Right: search box
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(c.card)
+                .border(1.dp, c.border, RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("🔍", fontSize = 13.sp)
+            Text(
+                "Search...",
+                fontFamily = DMSans,
+                fontSize   = 13.sp,
+                color      = c.muted
+            )
         }
     }
 }
@@ -151,12 +240,8 @@ fun GKKSidebar(
         drawerContainerColor = c.sidebar,
         modifier             = Modifier.width(240.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .verticalScroll(rememberScrollState())
-        ) {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+
             Row(
                 modifier              = Modifier
                     .fillMaxWidth()
@@ -315,6 +400,9 @@ private fun SidebarNavItem(
     }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  NAV HOST
+// ══════════════════════════════════════════════════════════════
 @Composable
 fun AppNavHost(navController: NavHostController, vm: MainViewModel, modifier: Modifier = Modifier) {
     NavHost(navController = navController, startDestination = Route.DASHBOARD, modifier = modifier) {
