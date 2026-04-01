@@ -17,7 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -27,8 +27,6 @@ import androidx.compose.ui.unit.dp
 import com.gkk.mppsc.ui.theme.DMSans
 import com.gkk.mppsc.ui.theme.Syne
 import com.gkk.mppsc.ui.theme.gkkColors
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun LoginScreen(
