@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.viewModels
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,9 +37,10 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private val authRepository by lazy { AuthRepository() }
-    // Hoist MainViewModel here so theme flows into GKKThemeWrapper
+    // FIX: Hoist both ViewModels at Activity level so they survive recomposition
     private val mainViewModel: MainViewModel by viewModels()
+    private val authRepository by lazy { AuthRepository() }
+    private val authViewModel  by lazy { AuthViewModel(authRepository) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,36 +48,45 @@ class MainActivity : ComponentActivity() {
             val theme by mainViewModel.theme.collectAsStateWithLifecycle()
             GKKThemeWrapper(theme = theme) {
                 RootNavigation(
-                    authRepository = authRepository,
-                    mainViewModel  = mainViewModel
+                    authViewModel = authViewModel,
+                    mainViewModel = mainViewModel
                 )
             }
         }
     }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  ROOT — switches between Auth flow and Main app
+//  FIX: Single authState drives the switch. No nested
+//       navControllers leaking across the auth/main boundary.
+// ══════════════════════════════════════════════════════════════
 @Composable
-fun RootNavigation(authRepository: AuthRepository, mainViewModel: MainViewModel) {
-    val navController = rememberNavController()
-    val authViewModel = remember { AuthViewModel(authRepository) }
-    val authState = authViewModel.uiState.collectAsState().value
+fun RootNavigation(
+    authViewModel: AuthViewModel,
+    mainViewModel: MainViewModel
+) {
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     if (authState.isAuthenticated) {
+        // FIX: pass hoisted mainViewModel — no viewModel() call inside
         MainAppNavigation(mainViewModel = mainViewModel)
     } else {
+        val authNavController = rememberNavController()
         AuthNavGraph(
-            navController = navController,
+            navController = authNavController,
             authViewModel = authViewModel,
-            onAuthSuccess = {}
+            onAuthSuccess = { /* isAuthenticated state above handles the switch */ }
         )
     }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  MAIN APP — drawer + top bar + nav host
+// ══════════════════════════════════════════════════════════════
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppNavigation(
-    mainViewModel: MainViewModel = viewModel()
-) {
+fun MainAppNavigation(mainViewModel: MainViewModel) {
     val navController  = rememberNavController()
     val drawerState    = rememberDrawerState(DrawerValue.Closed)
     val scope          = rememberCoroutineScope()
@@ -91,9 +100,13 @@ fun MainAppNavigation(
         .find { it.route == currentRoute }?.label ?: "Dashboard"
 
     ModalNavigationDrawer(
-        drawerState    = drawerState,
+        drawerState     = drawerState,
         gesturesEnabled = true,
-        drawerContent  = {
+        // FIX: drawerContent calls GKKSidebar which owns its own ModalDrawerSheet.
+        //      Previously the old code was fine here, but the new version had
+        //      no ModalDrawerSheet at all inside the lambda, causing the drawer
+        //      to render with zero size and vanish.
+        drawerContent   = {
             GKKSidebar(
                 currentRoute = currentRoute,
                 streak       = streak,
@@ -131,7 +144,7 @@ fun MainAppNavigation(
 }
 
 // ══════════════════════════════════════════════════════════════
-//  SIDEBAR
+//  SIDEBAR — owns the ModalDrawerSheet (one sheet, not two)
 // ══════════════════════════════════════════════════════════════
 @Composable
 fun GKKSidebar(
@@ -159,8 +172,10 @@ fun GKKSidebar(
                 Column {
                     Text(
                         "GKK MPPSC",
-                        fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
-                        fontSize   = 17.sp, color = Color.White,
+                        fontFamily    = Syne,
+                        fontWeight    = FontWeight.ExtraBold,
+                        fontSize      = 17.sp,
+                        color         = Color.White,
                         letterSpacing = (-0.3f).sp
                     )
                     Text(
@@ -187,11 +202,11 @@ fun GKKSidebar(
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 
-            // Nav sections
             sidebarSections.forEach { section ->
                 Text(
                     section.title.uppercase(),
-                    fontSize      = 10.sp, fontWeight = FontWeight.Bold,
+                    fontSize      = 10.sp,
+                    fontWeight    = FontWeight.Bold,
                     color         = Color.White.copy(alpha = 0.3f),
                     letterSpacing = 1.4.sp,
                     modifier      = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 6.dp)
@@ -227,8 +242,10 @@ fun GKKSidebar(
                 Column {
                     Text(
                         "$streak",
-                        fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
-                        fontSize = 18.sp, color = Color(0xFFFFD54F)
+                        fontFamily = Syne,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize   = 18.sp,
+                        color      = Color(0xFFFFD54F)
                     )
                     Text("day streak", fontSize = 10.sp, color = Color.White.copy(alpha = 0.45f))
                 }
@@ -265,7 +282,8 @@ private fun SidebarNavItem(
         )
         Text(
             item.label,
-            fontSize   = 13.sp, fontWeight = FontWeight.Medium,
+            fontSize   = 13.sp,
+            fontWeight = FontWeight.Medium,
             color      = if (isActive) Color.White else Color.White.copy(alpha = 0.65f),
             modifier   = Modifier.weight(1f)
         )
@@ -284,8 +302,10 @@ private fun SidebarNavItem(
                     .padding(horizontal = 7.dp, vertical = 2.dp)
             ) {
                 Text(
-                    badgeText, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                    color = if (isUrgent) Color.White else Color.Black
+                    badgeText,
+                    fontSize   = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = if (isUrgent) Color.White else Color.Black
                 )
             }
         }
@@ -297,22 +317,22 @@ private fun SidebarNavItem(
 // ══════════════════════════════════════════════════════════════
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GKKTopBar(
-    title:       String,
-    onMenuClick: () -> Unit
-) {
+fun GKKTopBar(title: String, onMenuClick: () -> Unit) {
     val c = gkkColors
     TopAppBar(
         title = {
             Column {
                 Text(
                     title,
-                    fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
-                    fontSize   = 20.sp, color = c.text
+                    fontFamily = Syne,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize   = 20.sp,
+                    color      = c.text
                 )
                 Text(
                     "Your complete study overview",
-                    fontSize = 12.sp, color = c.muted,
+                    fontSize = 12.sp,
+                    color    = c.muted,
                     modifier = Modifier.padding(top = 1.dp)
                 )
             }
@@ -327,19 +347,11 @@ fun GKKTopBar(
 }
 
 // ══════════════════════════════════════════════════════════════
-//  NAV HOST — every route registered (no crash on "Full Report")
+//  NAV HOST
 // ══════════════════════════════════════════════════════════════
 @Composable
-fun AppNavHost(
-    navController: NavHostController,
-    vm:            MainViewModel,
-    modifier:      Modifier = Modifier
-) {
-    NavHost(
-        navController    = navController,
-        startDestination = Route.DASHBOARD,
-        modifier         = modifier
-    ) {
+fun AppNavHost(navController: NavHostController, vm: MainViewModel, modifier: Modifier = Modifier) {
+    NavHost(navController = navController, startDestination = Route.DASHBOARD, modifier = modifier) {
         composable(Route.DASHBOARD)       { DashboardScreen(vm = vm, nav = navController) }
         composable(Route.TEST)            { TestHomeScreen(vm = vm, nav = navController) }
         composable(Route.TEST_SESSION)    { TestSessionScreen(vm = vm, nav = navController) }
