@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.gkk.mppsc"
+    namespace = "com.padhleyrr.mppsc"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.gkk.mppsc"
+        applicationId = "com.padhleyrr.mppsc"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
