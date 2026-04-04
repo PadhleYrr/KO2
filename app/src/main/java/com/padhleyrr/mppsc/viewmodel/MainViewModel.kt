@@ -6,7 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.padhleyrr.mppsc.data.models.*
 import com.padhleyrr.mppsc.data.repository.ContentRepository
 import com.padhleyrr.mppsc.data.repository.PrefsRepository
+import com.padhleyrr.mppsc.data.repository.SubscriptionRepository
 import com.padhleyrr.mppsc.ui.theme.GKKTheme
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -245,21 +248,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ── Subscription / Premium ─────────────────────────────────────────
     fun redeemCoupon(code: String, onResult: (Result<Int>) -> Unit) {
         viewModelScope.launch {
-            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: run {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
                 onResult(Result.failure(Exception("Not logged in"))); return@launch
             }
-            val result = com.padhleyrr.mppsc.data.repository.SubscriptionRepository.redeemCoupon(uid, code)
+            val result = SubscriptionRepository.redeemCoupon(uid, code)
             onResult(result)
         }
     }
 
     /** Called when user taps "I've Paid" — logs payment intent to Firestore for admin to verify */
     fun logPaymentIntent() {
-        val uid   = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val email = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email ?: ""
+        val uid   = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val email = FirebaseAuth.getInstance().currentUser?.email ?: ""
         viewModelScope.launch {
             try {
-                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                FirebaseFirestore.getInstance()
                     .collection("paymentIntents")
                     .add(mapOf(
                         "uid"       to uid,
