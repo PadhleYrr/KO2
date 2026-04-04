@@ -51,60 +51,69 @@ fun NotesScreen(vm: MainViewModel) {
         b { color: ${colorToHex(c.navy)}; }
     """.trimIndent()
 
-    Row(
-        modifier = Modifier.fillMaxSize().background(c.bg).padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    Column(
+        modifier = Modifier.fillMaxSize().background(c.bg)
     ) {
-        // ── Left nav ──────────────────────────────────────────────────
-        Column(
-            modifier = Modifier.width(170.dp).verticalScroll(rememberScrollState())
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            notes.forEachIndexed { idx, note ->
-                val active = idx == selectedIndex
-                Text(
-                    text = note.name,
-                    fontSize = 12.5.sp,
-                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (active) Color.White else c.muted,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 2.dp)
-                        .clip(RoundedCornerShape(9.dp))
-                        .background(if (active) c.navy else Color.Transparent)
-                        .border(
-                            1.dp,
-                            if (active) Color.Transparent else c.border,
-                            RoundedCornerShape(9.dp)
-                        )
-                        .clickable { selectedIndex = idx }
-                        .padding(9.dp)
-                )
+            // ── Left nav ──────────────────────────────────────────────────
+            Column(
+                modifier = Modifier
+                    .width(130.dp)
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                notes.forEachIndexed { idx, note ->
+                    val active = idx == selectedIndex
+                    Text(
+                        text = note.name,
+                        fontSize = 12.sp,
+                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (active) Color.White else c.muted,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 3.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(if (active) c.navy else Color.Transparent)
+                            .border(
+                                1.dp,
+                                if (active) Color.Transparent else c.border,
+                                RoundedCornerShape(9.dp)
+                            )
+                            .clickable { selectedIndex = idx }
+                            .padding(8.dp)
+                    )
+                }
             }
-        }
 
-        // ── Content area ─────────────────────────────────────────────
-        val currentNote = notes.getOrNull(selectedIndex)
-        if (currentNote != null) {
-            GKKCard(modifier = Modifier.weight(1f).fillMaxHeight(), padding = 0.dp) {
-                AndroidView(
-                    factory  = { ctx ->
-                        WebView(ctx).apply {
-                            webViewClient = WebViewClient()
-                            settings.javaScriptEnabled = false
-                        }
-                    },
-                    update   = { webView ->
-                        val html = """
-                            <!DOCTYPE html><html><head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <style>$notesCss</style>
-                            </head><body>${currentNote.content}</body></html>
-                        """.trimIndent()
-                        webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+            // ── Content area ─────────────────────────────────────────────
+            val currentNote = notes.getOrNull(selectedIndex)
+            if (currentNote != null) {
+                GKKCard(modifier = Modifier.weight(1f).fillMaxHeight(), padding = 0.dp) {
+                    AndroidView(
+                        factory  = { ctx ->
+                            WebView(ctx).apply {
+                                webViewClient = WebViewClient()
+                                settings.javaScriptEnabled = false
+                            }
+                        },
+                        update   = { webView ->
+                            val html = """
+                                <!DOCTYPE html><html><head>
+                                <meta charset="UTF-8">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+                                <style>$notesCss</style>
+                                </head><body>${currentNote.content}</body></html>
+                            """.trimIndent()
+                            webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }
