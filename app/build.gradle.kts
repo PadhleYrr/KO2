@@ -23,8 +23,8 @@ android {
     }
 
     val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-    val keyAliasEnv     = System.getenv("KEY_ALIAS")
-    val hasKeystore     = !keystorePassword.isNullOrEmpty() && !keyAliasEnv.isNullOrEmpty()
+    val keyAliasEnv      = System.getenv("KEY_ALIAS")
+    val hasKeystore      = !keystorePassword.isNullOrEmpty() && !keyAliasEnv.isNullOrEmpty()
 
     if (hasKeystore) {
         signingConfigs {
@@ -45,8 +45,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Use release keystore if secrets are set, otherwise fall back to
-            // debug signing so the APK is always installable
             signingConfig = if (hasKeystore) {
                 signingConfigs.getByName("release")
             } else {
@@ -59,15 +57,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    
+
     kotlin {
         jvmToolchain(17)
     }
-    
+
     buildFeatures {
         compose = true
     }
-    
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -98,13 +96,16 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
-    // DataStore (used by PrefsRepository)
+    // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-    // Gson (used by ContentRepository + PrefsRepository)
+    // Gson
     implementation("com.google.code.gson:gson:2.11.0")
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    
+
+    // ── NEW: Coil for image loading in CommunityScreen (AsyncImage) ──
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
