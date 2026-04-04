@@ -240,4 +240,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return if (selectedCategories.isEmpty()) all.shuffled()
         else all.filter { it.category in selectedCategories }.shuffled()
     }
+
+
+    // ── Subscription / Premium ─────────────────────────────────────────
+    fun redeemCoupon(code: String, onResult: (Result<Int>) -> Unit) {
+        viewModelScope.launch {
+            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: run {
+                onResult(Result.failure(Exception("Not logged in"))); return@launch
+            }
+            val result = com.padhleyrr.mppsc.data.repository.SubscriptionRepository.redeemCoupon(uid, code)
+            onResult(result)
+        }
+    }
+
+    /** Called when user taps "I've Paid" — logs payment intent to Firestore for admin to verify */
+    fun logPaymentIntent() {
+        val uid   = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val email = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email ?: ""
+        viewModelScope.launch {
+            try {
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("paymentIntents")
+                    .add(mapOf(
+                        "uid"       to uid,
+                        "email"     to email,
+                        "amount"    to 100,
+                        "status"    to "pending",
+                        "timestamp" to System.currentTimeMillis()
+                    )).addOnFailureListener { }
+            } catch (_: Exception) {}
+        }
+    }
+
 }
