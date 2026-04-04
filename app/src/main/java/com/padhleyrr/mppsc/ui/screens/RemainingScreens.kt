@@ -1,5 +1,7 @@
 package com.padhleyrr.mppsc.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +73,7 @@ fun DailyScreen(vm: MainViewModel, nav: NavHostController) {
                     lineHeight = 20.sp)
                 Spacer(Modifier.height(24.dp))
                 GKKButton("Start Daily 10 →", onClick = {
-                    vm.startTest(TestMode.QUICK, emptyList())
+                    vm.startTest(TestMode.DAILY, emptyList())
                     nav.navigate(Route.TEST_SESSION)
                 })
             }
@@ -153,6 +156,7 @@ fun PYQScreen(vm: MainViewModel, nav: NavHostController) {
                        else papers.filter { it.year == selectedYear }
 
         filtered.forEach { paper ->
+            val context = LocalContext.current
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                     .clip(RoundedCornerShape(14.dp))
@@ -183,6 +187,17 @@ fun PYQScreen(vm: MainViewModel, nav: NavHostController) {
                             }
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) { Text("Practice", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = c.saff) }
+                    if (paper.pdfUrl.isNotBlank()) {
+                        Box(
+                            modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFEEF0FF))
+                                .clickable {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paper.pdfUrl))
+                                    context.startActivity(intent)
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) { Text("⬇ PDF", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = c.navy) }
+                    }
                 }
             }
         }
@@ -228,8 +243,11 @@ fun CurrentAffairsScreen(vm: MainViewModel) {
         }
         Spacer(Modifier.height(14.dp))
 
-        // Filter tabs
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Filter tabs — horizontally scrollable so long labels never wrap
+        Row(
+            modifier              = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             tags.forEach { (tag, label) ->
                 FilterChip(label, filter == tag) { filter = tag }
             }
@@ -570,12 +588,18 @@ fun ReviewScreen(vm: MainViewModel) {
     val c       = gkkColors
     val entries by vm.srsEntries.collectAsStateWithLifecycle()
     val now     = System.currentTimeMillis()
-    val due     = entries.filter { it.nextReview <= now }
-    var currentDueIdx by remember { mutableStateOf(0) }
-    var chosen        by remember(currentDueIdx) { mutableStateOf<Int?>(null) }
+
+    // Snapshot due list once per composition so index is stable
+    val due = remember(entries) { entries.filter { it.nextReview <= now } }
+
+    var currentDueIdx by remember(due) { mutableStateOf(0) }
+    // Track answer per question index — avoids state bleeding across cards
+    val answers = remember(due) { mutableStateMapOf<Int, Int>() }
+    val chosen: Int? = answers[currentDueIdx]
 
     val totalInSRS = entries.size
     val mastered   = entries.count { it.level >= 4 }
+    val allDone    = due.isNotEmpty() && currentDueIdx >= due.size
 
     Column(
         modifier = Modifier.fillMaxSize().background(c.bg)
@@ -589,24 +613,31 @@ fun ReviewScreen(vm: MainViewModel) {
         }
         Spacer(Modifier.height(16.dp))
 
-        if (due.isEmpty()) {
+        if (due.isEmpty() || allDone) {
             GKKCard {
                 Column(
                     modifier          = Modifier.fillMaxWidth().padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("✅", fontSize = 40.sp)
-                    Text("All caught up!", fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp, modifier = Modifier.padding(top = 12.dp))
-                    Text("No reviews due today. Answer questions incorrectly to add them here.",
-                        fontSize = 13.sp, color = c.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp))
+                    Text(if (allDone) "🎉" else "✅", fontSize = 40.sp)
+                    Text(
+                        if (allDone) "Session Complete!" else "All caught up!",
+                        fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp, modifier = Modifier.padding(top = 12.dp)
+                    )
+                    Text(
+                        if (allDone) "You reviewed all ${due.size} due cards."
+                        else "No reviews due today. Answer questions incorrectly to add them here.",
+                        fontSize = 13.sp, color = c.muted,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+                    )
                 }
             }
             return
         }
 
-        val entry = due.getOrNull(currentDueIdx) ?: return
+        val entry = due[currentDueIdx]
         val q     = entry.question
 
         GKKCard {
@@ -617,10 +648,10 @@ fun ReviewScreen(vm: MainViewModel) {
                 color = c.text, lineHeight = 23.sp, modifier = Modifier.padding(bottom = 14.dp))
 
             q.options.forEachIndexed { idx, opt ->
-                val answered = chosen != null
+                val answered  = chosen != null
                 val isCorrect = idx == q.answer
                 val isChosen  = idx == chosen
-                val bg = when { !answered -> c.card; isCorrect -> Color(0xFFECFDF5); isChosen && !isCorrect -> Color(0xFFFEF2F2); else -> c.card }
+                val bg     = when { !answered -> c.card; isCorrect -> Color(0xFFECFDF5); isChosen && !isCorrect -> Color(0xFFFEF2F2); else -> c.card }
                 val border = when { !answered -> c.border; isCorrect -> Color(0xFF6EE7B7); isChosen && !isCorrect -> Color(0xFFFCA5A5); else -> c.border }
 
                 Row(
@@ -629,7 +660,7 @@ fun ReviewScreen(vm: MainViewModel) {
                         .background(bg)
                         .border(1.5.dp, border, RoundedCornerShape(10.dp))
                         .then(if (!answered) Modifier.clickable {
-                            chosen = idx
+                            answers[currentDueIdx] = idx          // store answer for THIS card only
                             vm.submitSrsAnswer(entry, idx == q.answer)
                         } else Modifier)
                         .padding(12.dp),
@@ -655,11 +686,10 @@ fun ReviewScreen(vm: MainViewModel) {
                         fontSize = 12.sp, color = c.muted, modifier = Modifier.padding(top = 4.dp))
                 }
                 Spacer(Modifier.height(14.dp))
-                GKKButton("Next Review →", onClick = {
-                    chosen = null
-                    currentDueIdx++
-                    if (currentDueIdx >= due.size) currentDueIdx = due.size
-                })
+                GKKButton(
+                    if (currentDueIdx < due.size - 1) "Next Review →" else "Finish Session ✓",
+                    onClick = { currentDueIdx++ }
+                )
             }
         }
     }
@@ -789,27 +819,57 @@ private fun SettingRow(label: String, desc: String, control: @Composable () -> U
 // ═══════════════════════════════════════════════
 @Composable
 fun DonateScreen(vm: MainViewModel) {
-    val c = gkkColors
+    val c       = gkkColors
+    val context = LocalContext.current
     Column(
-        modifier          = Modifier.fillMaxSize().background(c.bg)
+        modifier            = Modifier.fillMaxSize().background(c.bg)
             .verticalScroll(rememberScrollState()).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         GKKCard {
             Column(
-                modifier          = Modifier.fillMaxWidth(),
+                modifier            = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("❤️", fontSize = 48.sp, modifier = Modifier.padding(bottom = 12.dp))
-                Text("Support GKK MPPSC", fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
-                    fontSize = 20.sp, color = c.text)
+                Text(
+                    "Support GKK MPPSC",
+                    fontFamily  = Syne, fontWeight = FontWeight.ExtraBold,
+                    fontSize    = 20.sp, color = c.text,
+                    textAlign   = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier    = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(10.dp))
                 Text(
                     "This app is free for all MPPSC aspirants. If it helped you, consider supporting us to keep it running and add more content.",
-                    fontSize = 13.sp, color = c.muted,
+                    fontSize  = 13.sp, color = c.muted,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     lineHeight = 20.sp,
-                    modifier = Modifier.padding(vertical = 14.dp)
+                    modifier  = Modifier.fillMaxWidth().padding(bottom = 20.dp)
                 )
+
+                // QR code placeholder box
+                Box(
+                    modifier = Modifier
+                        .size(180.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFFEEF0FF))
+                        .border(2.dp, c.navy, RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("▦", fontSize = 64.sp, color = c.navy)
+                        Text(
+                            "Scan to Pay",
+                            fontSize   = 12.sp, fontWeight = FontWeight.SemiBold,
+                            color      = c.navy,
+                            modifier   = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(20.dp))
+
+                // UPI ID box
                 Box(
                     modifier = Modifier.fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
@@ -817,13 +877,48 @@ fun DonateScreen(vm: MainViewModel) {
                         .border(1.dp, Color(0xFF6EE7B7), RoundedCornerShape(12.dp))
                         .padding(16.dp)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier            = Modifier.fillMaxWidth()
+                    ) {
                         Text("UPI ID", fontSize = 12.sp, color = c.muted)
                         Spacer(Modifier.height(4.dp))
-                        Text("padhleyrr@upi", fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
-                            fontSize = 18.sp, color = c.navy)
+                        Text(
+                            "padhleyrr@upi",
+                            fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
+                            fontSize   = 18.sp, color = c.navy,
+                            textAlign  = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        // Copy-to-clipboard button
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(c.navy)
+                                .clickable {
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                                            as android.content.ClipboardManager
+                                    clipboard.setPrimaryClip(
+                                        android.content.ClipData.newPlainText("UPI ID", "padhleyrr@upi")
+                                    )
+                                }
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                "📋 Copy UPI ID",
+                                fontSize   = 13.sp, fontWeight = FontWeight.SemiBold,
+                                color      = Color.White
+                            )
+                        }
                     }
                 }
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Every contribution helps keep this app free 🙏",
+                    fontSize  = 12.sp, color = c.muted,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier  = Modifier.fillMaxWidth()
+                )
             }
         }
     }
