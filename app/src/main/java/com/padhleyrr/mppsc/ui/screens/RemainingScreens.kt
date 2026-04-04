@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.padhleyrr.mppsc.data.models.TestMode
+import com.padhleyrr.mppsc.data.repository.SubscriptionRepository
 import com.padhleyrr.mppsc.ui.components.*
 import com.padhleyrr.mppsc.ui.navigation.Route
 import com.padhleyrr.mppsc.ui.theme.GKKTheme
@@ -699,15 +700,55 @@ fun ReviewScreen(vm: MainViewModel) {
 //  SETTINGS
 // ═══════════════════════════════════════════════
 @Composable
-fun SettingsScreen(vm: MainViewModel) {
+fun SettingsScreen(vm: MainViewModel, onOpenProfile: (() -> Unit)? = null) {
     val c            = gkkColors
     val currentTheme by vm.theme.collectAsStateWithLifecycle()
     val notifEnabled by vm.notifEnabled.collectAsStateWithLifecycle()
+    val sub          by com.padhleyrr.mppsc.data.repository.SubscriptionRepository.state.collectAsStateWithLifecycle()
+    val user         by com.padhleyrr.mppsc.data.repository.SubscriptionRepository.userRecord.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier.fillMaxSize().background(c.bg)
             .verticalScroll(rememberScrollState()).padding(16.dp)
     ) {
+        // ── Account card (shortcut to profile) ──────────────────────
+        if (onOpenProfile != null) {
+            val (statusLabel, statusBg, statusText) = when {
+                sub.isAdmin   -> Triple("ADMIN",   Color(0xFF5E35B1), Color.White)
+                sub.isPremium -> Triple("PRO",     Color(0xFF15803D), Color.White)
+                sub.isTrialActive -> Triple("TRIAL", Color(0xFFD97706), Color.White)
+                else          -> Triple("EXPIRED", Color(0xFFDC2626), Color.White)
+            }
+            GKKCard(modifier = Modifier.padding(bottom = 14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onOpenProfile() }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.size(44.dp).clip(RoundedCornerShape(50.dp))
+                            .background(c.navy),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val initial = (user.name.firstOrNull() ?: user.email.firstOrNull() ?: 'U').uppercaseChar()
+                        Text("$initial", fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp, color = Color.White)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(user.name.ifEmpty { user.email.substringBefore('@') },
+                            fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = c.text)
+                        Text(user.email, fontSize = 11.sp, color = c.muted,
+                            modifier = Modifier.padding(top = 1.dp))
+                    }
+                    Box(
+                        modifier = Modifier.clip(RoundedCornerShape(20.dp))
+                            .background(statusBg)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) { Text(statusLabel, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = statusText) }
+                }
+            }
+        }
         // Theme picker
         GKKCard(modifier = Modifier.padding(bottom = 14.dp)) {
             Row(
