@@ -166,63 +166,40 @@ fun GKKTopBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(c.bg)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment     = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Left: hamburger + title
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.weight(1f)
+        // Hamburger ☰
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onMenuClick),
+            contentAlignment = Alignment.Center
         ) {
-            // Hamburger ☰
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onMenuClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("☰", fontSize = 22.sp, color = c.text)
-            }
-
-            // Title + subtitle
-            Column {
-                Text(
-                    text          = title,
-                    fontFamily    = Syne,
-                    fontWeight    = FontWeight.ExtraBold,
-                    fontSize      = 22.sp,
-                    color         = c.text,
-                    maxLines      = 1
-                )
-                Text(
-                    text       = subtitle,
-                    fontFamily = DMSans,
-                    fontSize   = 13.sp,
-                    color      = c.muted,
-                    modifier   = Modifier.padding(top = 2.dp)
-                )
-            }
+            Text("☰", fontSize = 22.sp, color = c.text)
         }
 
-        // Right: search box
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(c.card)
-                .border(1.dp, c.border, RoundedCornerShape(10.dp))
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text("🔍", fontSize = 13.sp)
+        // Title + subtitle — takes all remaining width, no overflow
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                "Search...",
+                text          = title,
+                fontFamily    = Syne,
+                fontWeight    = FontWeight.ExtraBold,
+                fontSize      = 19.sp,
+                color         = c.text,
+                maxLines      = 1,
+                overflow      = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Text(
+                text       = subtitle,
                 fontFamily = DMSans,
-                fontSize   = 13.sp,
-                color      = c.muted
+                fontSize   = 12.sp,
+                color      = c.muted,
+                maxLines   = 1,
+                overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier   = Modifier.padding(top = 1.dp)
             )
         }
     }
