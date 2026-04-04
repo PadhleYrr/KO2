@@ -24,6 +24,9 @@ object Route {
     const val REVIEW         = "review"
     const val DONATE         = "donate"
     const val SETTINGS       = "settings"
+    const val PROFILE        = "profile"
+    const val SUBSCRIPTION   = "subscription"
+    const val ADMIN          = "admin"
 }
 
 // ── Sidebar nav items (same order as your HTML sidebar) ──────────────
@@ -58,6 +61,7 @@ sealed class NavItem(
     // Other section
     object Donate        : NavItem(Route.DONATE,          "Support Us",      Icons.Default.Favorite)
     object Settings      : NavItem(Route.SETTINGS,        "Settings",        Icons.Default.Settings,    isNew = true)
+    object Profile       : NavItem(Route.PROFILE,         "My Profile",      Icons.Default.AccountCircle)
 }
 
 // ── Grouped sidebar sections matching your HTML nav-section dividers ──
@@ -87,6 +91,7 @@ val sidebarSections = listOf(
     )),
     NavSection("Other", listOf(
         NavItem.Donate,
-        NavItem.Settings
+        NavItem.Settings,
+        NavItem.Profile
     ))
 )
