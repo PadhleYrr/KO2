@@ -669,7 +669,7 @@ private fun AdminToolsTab() {
                             @Suppress("UNCHECKED_CAST")
                             val existing = (snap.get("codes") as? List<Map<String, Any>>)?.toMutableList() ?: mutableListOf()
                             if (existing.any { it["code"] == code }) { couponMsg = "Code already exists!"; return@launch }
-                            existing.add(mapOf("code" to code, "days" to days.toLong(), "createdAt" to System.currentTimeMillis(), "usedBy" to null))
+                            existing.add(mapOf<String, Any>("code" to code, "days" to days.toLong(), "createdAt" to System.currentTimeMillis()))
                             ref.set(mapOf("codes" to existing)).await()
                             coupons = existing; couponCode = ""; couponDays = ""
                             couponMsg = "✅ Coupon created!"
