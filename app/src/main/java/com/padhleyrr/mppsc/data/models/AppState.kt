@@ -14,7 +14,8 @@ enum class TestMode(val label: String, val count: Int) {
     FULL("Full Test", 0),
     LONG("Long — 100 Qs", 100),
     PRACTICE("Practice — 50 Qs", 50),
-    QUICK("Quick — 25 Qs", 25)
+    QUICK("Quick — 25 Qs", 25),
+    DAILY("Daily 10", 10)
 }
 
 /** SRS (Spaced Repetition) entry for smart review */
