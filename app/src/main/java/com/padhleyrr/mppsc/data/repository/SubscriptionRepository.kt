@@ -67,7 +67,7 @@ object SubscriptionRepository {
     // ── LOAD USER STATE FROM FIRESTORE ───────────────────────────
     suspend fun loadUser(uid: String, email: String, displayName: String?) {
         try {
-            val ref  = db.collection("users").doc(uid)
+            val ref  = db.collection("users").document(uid)
             val snap = ref.get().await()
             val now  = System.currentTimeMillis()
 
@@ -115,7 +115,7 @@ object SubscriptionRepository {
 
     private suspend fun checkAdmin(email: String): Boolean {
         return try {
-            val snap = db.collection("config").doc("admins").get().await()
+            val snap = db.collection("config").document("admins").get().await()
             if (snap.exists()) {
                 val emails = snap.get("emails") as? List<*> ?: emptyList<Any>()
                 emails.any { it.toString().trim().lowercase() == email.trim().lowercase() }
