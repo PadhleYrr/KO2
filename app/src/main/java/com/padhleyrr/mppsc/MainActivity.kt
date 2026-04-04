@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.viewModels
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,6 +37,7 @@ import com.padhleyrr.mppsc.ui.theme.GKKThemeWrapper
 import com.padhleyrr.mppsc.ui.theme.Syne
 import com.padhleyrr.mppsc.ui.theme.gkkColors
 import com.padhleyrr.mppsc.viewmodel.AuthViewModel
+import com.padhleyrr.mppsc.viewmodel.CommunityViewModel
 import com.padhleyrr.mppsc.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
@@ -66,10 +68,10 @@ fun RootNavigation(authViewModel: AuthViewModel, mainViewModel: MainViewModel) {
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val scope     = rememberCoroutineScope()
 
-    // Load subscription state whenever user logs in
     LaunchedEffect(authState.isAuthenticated, authState.userEmail) {
         if (authState.isAuthenticated && authState.userEmail != null) {
-            val uid  = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
+            val uid   = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                ?: return@LaunchedEffect
             val email = authState.userEmail ?: return@LaunchedEffect
             val name  = authState.userName
             scope.launch {
@@ -112,25 +114,26 @@ fun MainAppNavigation(mainViewModel: MainViewModel) {
         }
 
     val pageSubtitle = when (currentRoute) {
-        Route.DASHBOARD      -> "Your complete study overview"
-        Route.NOTES          -> "Read & revise your notes"
-        Route.FLASHCARDS     -> "Quick revision cards"
-        Route.TEST           -> "Practice MCQ questions"
-        Route.DAILY          -> "10 questions a day"
-        Route.TIMED          -> "Timed mock test"
-        Route.PYQ            -> "Previous year papers"
-        Route.CURRENT_AFFAIRS-> "Stay updated"
-        Route.BOOKMARKS      -> "Your saved questions"
-        Route.WEAK_AREAS     -> "Topics to improve"
-        Route.PROGRESS       -> "Track your journey"
-        Route.REVIEW         -> "Spaced repetition review"
-        Route.SYLLABUS       -> "Complete MPPSC syllabus"
-        Route.SETTINGS       -> "Preferences & themes"
-        Route.DONATE         -> "Support the app"
-        Route.PROFILE        -> "Account & subscription"
-        Route.SUBSCRIPTION   -> "Unlock full access"
-        Route.ADMIN          -> "Control Centre"
-        else                 -> "GKK MPPSC"
+        Route.DASHBOARD       -> "Your complete study overview"
+        Route.NOTES           -> "Read & revise your notes"
+        Route.FLASHCARDS      -> "Quick revision cards"
+        Route.TEST            -> "Practice MCQ questions"
+        Route.DAILY           -> "10 questions a day"
+        Route.TIMED           -> "Timed mock test"
+        Route.PYQ             -> "Previous year papers"
+        Route.CURRENT_AFFAIRS -> "Stay updated"
+        Route.COMMUNITY       -> "Ask doubts · Share · Discuss"  // ← NEW
+        Route.BOOKMARKS       -> "Your saved questions"
+        Route.WEAK_AREAS      -> "Topics to improve"
+        Route.PROGRESS        -> "Track your journey"
+        Route.REVIEW          -> "Spaced repetition review"
+        Route.SYLLABUS        -> "Complete MPPSC syllabus"
+        Route.SETTINGS        -> "Preferences & themes"
+        Route.DONATE          -> "Support the app"
+        Route.PROFILE         -> "Account & subscription"
+        Route.SUBSCRIPTION    -> "Unlock full access"
+        Route.ADMIN           -> "Control Centre"
+        else                  -> "GKK MPPSC"
     }
 
     ModalNavigationDrawer(
@@ -181,20 +184,18 @@ fun MainAppNavigation(mainViewModel: MainViewModel) {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  TOP BAR — matches web exactly:
-//  bg colour = page bg (not navy), Syne title, DM Sans subtitle,
-//  search box on right, hamburger on left
+//  TOP BAR
 // ══════════════════════════════════════════════════════════════
 @Composable
 fun GKKTopBar(
-    title:         String,
-    subtitle:      String,
-    onMenuClick:   () -> Unit,
+    title:          String,
+    subtitle:       String,
+    onMenuClick:    () -> Unit,
     onProfileClick: () -> Unit = {}
 ) {
-    val c   = gkkColors
-    val sub by com.padhleyrr.mppsc.data.repository.SubscriptionRepository.state.collectAsStateWithLifecycle()
-    val user by com.padhleyrr.mppsc.data.repository.SubscriptionRepository.userRecord.collectAsStateWithLifecycle()
+    val c    = gkkColors
+    val sub  by SubscriptionRepository.state.collectAsStateWithLifecycle()
+    val user by SubscriptionRepository.userRecord.collectAsStateWithLifecycle()
 
     Row(
         modifier = Modifier
@@ -204,7 +205,7 @@ fun GKKTopBar(
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Hamburger ☰
+        // Hamburger
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -215,16 +216,15 @@ fun GKKTopBar(
             Text("☰", fontSize = 22.sp, color = c.text)
         }
 
-        // Title + subtitle — takes all remaining width, no overflow
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text          = title,
-                fontFamily    = Syne,
-                fontWeight    = FontWeight.ExtraBold,
-                fontSize      = 19.sp,
-                color         = c.text,
-                maxLines      = 1,
-                overflow      = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                text       = title,
+                fontFamily = Syne,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize   = 19.sp,
+                color      = c.text,
+                maxLines   = 1,
+                overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Text(
                 text       = subtitle,
@@ -237,7 +237,6 @@ fun GKKTopBar(
             )
         }
 
-        // User/profile badge — matches GKK updateUserBadge()
         if (sub.isLoaded) {
             Row(
                 modifier = Modifier
@@ -246,12 +245,12 @@ fun GKKTopBar(
                     .border(BorderStroke(1.dp, c.border), RoundedCornerShape(10.dp))
                     .clickable(onClick = onProfileClick)
                     .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Avatar initial
                 Box(
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier
+                        .size(22.dp)
                         .clip(androidx.compose.foundation.shape.CircleShape)
                         .background(c.navy),
                     contentAlignment = Alignment.Center
@@ -264,17 +263,17 @@ fun GKKTopBar(
                     fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = c.text,
                     maxLines = 1
                 )
-                // Status badge
                 val (badgeText, badgeBg) = when {
-                    sub.isAdmin   -> "ADMIN" to Color(0xFF5E35B1)
-                    sub.isPremium -> "PRO"   to Color(0xFF15803D)
+                    sub.isAdmin       -> "ADMIN" to Color(0xFF5E35B1)
+                    sub.isPremium     -> "PRO"   to Color(0xFF15803D)
                     sub.isTrialActive -> "${
                         ((sub.trialMsLeft / 86_400_000L).toInt() + 1).coerceAtMost(7)
                     }d" to Color(0xFFD97706)
                     else -> "!" to Color(0xFFDC2626)
                 }
                 Box(
-                    modifier = Modifier.clip(RoundedCornerShape(20.dp))
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
                         .background(badgeBg)
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
@@ -467,9 +466,17 @@ private fun SidebarNavItem(
 //  NAV HOST
 // ══════════════════════════════════════════════════════════════
 @Composable
-fun AppNavHost(navController: NavHostController, vm: MainViewModel, modifier: Modifier = Modifier) {
+fun AppNavHost(
+    navController: NavHostController,
+    vm:            MainViewModel,
+    modifier:      Modifier = Modifier
+) {
     val scope = rememberCoroutineScope()
-    NavHost(navController = navController, startDestination = Route.DASHBOARD, modifier = modifier) {
+    NavHost(
+        navController    = navController,
+        startDestination = Route.DASHBOARD,
+        modifier         = modifier
+    ) {
         composable(Route.DASHBOARD)       { DashboardScreen(vm = vm, nav = navController) }
         composable(Route.TEST)            { TestHomeScreen(vm = vm, nav = navController) }
         composable(Route.TEST_SESSION)    { TestSessionScreen(vm = vm, nav = navController) }
@@ -485,20 +492,33 @@ fun AppNavHost(navController: NavHostController, vm: MainViewModel, modifier: Mo
         composable(Route.PROGRESS)        { ProgressScreen(vm = vm) }
         composable(Route.REVIEW)          { ReviewScreen(vm = vm) }
         composable(Route.DONATE)          { DonateScreen(vm = vm) }
-        composable(Route.SETTINGS)        { SettingsScreen(vm = vm, onOpenProfile = { navController.navigate(Route.PROFILE) { launchSingleTop = true } }) }
+        composable(Route.SETTINGS)        {
+            SettingsScreen(
+                vm            = vm,
+                onOpenProfile = {
+                    navController.navigate(Route.PROFILE) { launchSingleTop = true }
+                }
+            )
+        }
         composable(Route.SYLLABUS)        { SyllabusScreen(vm = vm) }
 
-        // ── NEW: Profile, Subscription, Admin ────────────────────
+        // ── Community ──────────────────────────────────────────────
+        composable(Route.COMMUNITY) {
+            val communityVm: CommunityViewModel = viewModel()
+            CommunityScreen(vm = communityVm)
+        }
+
+        // ── Profile, Subscription, Admin ──────────────────────────
         composable(Route.PROFILE) {
             ProfileScreen(
-                vm                  = vm,
-                onNavigateToDonate  = {
+                vm                 = vm,
+                onNavigateToDonate = {
                     navController.navigate(Route.DONATE) { launchSingleTop = true }
                 },
                 onSignOut = {
                     scope.launch {
                         com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                        com.padhleyrr.mppsc.data.repository.SubscriptionRepository.reset()
+                        SubscriptionRepository.reset()
                     }
                 },
                 onOpenAdmin = {
@@ -518,12 +538,12 @@ fun AppNavHost(navController: NavHostController, vm: MainViewModel, modifier: Mo
         }
 
         composable(Route.ADMIN) {
-            // Guard: only accessible if admin
-            val sub by com.padhleyrr.mppsc.data.repository.SubscriptionRepository.state.collectAsStateWithLifecycle()
+            val sub by SubscriptionRepository.state.collectAsStateWithLifecycle()
             if (sub.isAdmin) {
                 AdminScreen(onClose = { navController.popBackStack() })
             } else {
-                navController.popBackStack()
+                // BUG FIX: use LaunchedEffect to avoid side-effect during composition
+                LaunchedEffect(Unit) { navController.popBackStack() }
             }
         }
     }
