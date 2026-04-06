@@ -28,6 +28,7 @@ object Route {
     const val SUBSCRIPTION    = "subscription"
     const val ADMIN           = "admin"
     const val COMMUNITY       = "community"        // ← NEW
+    const val MAP             = "map"
 }
 
 // ── Sidebar nav items (same order as HTML sidebar) ──────────────────
@@ -53,6 +54,7 @@ sealed class NavItem(
     object PYQ           : NavItem(Route.PYQ,             "PYQ Papers",      Icons.Default.Article,     badgeText = "4yr")
     object CurrentAffairs: NavItem(Route.CURRENT_AFFAIRS, "Current Affairs", Icons.Default.Newspaper,   isNew = true)
     object Community     : NavItem(Route.COMMUNITY,       "Community",       Icons.Default.Groups,      isNew = true) // ← NEW
+    object Map           : NavItem(Route.MAP,             "MP Atlas Map",    Icons.Default.Map,         isNew = true)
     object Bookmarks     : NavItem(Route.BOOKMARKS,       "Bookmarks",       Icons.Default.Bookmark)
 
     // Progress section
@@ -74,7 +76,8 @@ val sidebarSections = listOf(
         NavItem.Dashboard,
         NavItem.Syllabus,
         NavItem.Notes,
-        NavItem.Flashcards
+        NavItem.Flashcards,
+        NavItem.Map
     )),
     NavSection("Practice", listOf(
         NavItem.Test,
