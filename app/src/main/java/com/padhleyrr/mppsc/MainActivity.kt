@@ -123,6 +123,7 @@ fun MainAppNavigation(mainViewModel: MainViewModel) {
         Route.PYQ             -> "Previous year papers"
         Route.CURRENT_AFFAIRS -> "Stay updated"
         Route.COMMUNITY       -> "Ask doubts · Share · Discuss"  // ← NEW
+        Route.MAP             -> "Interactive MP Geography Atlas"
         Route.BOOKMARKS       -> "Your saved questions"
         Route.WEAK_AREAS      -> "Topics to improve"
         Route.PROGRESS        -> "Track your journey"
@@ -507,6 +508,8 @@ fun AppNavHost(
             val communityVm: CommunityViewModel = viewModel()
             CommunityScreen(vm = communityVm)
         }
+
+        composable(Route.MAP) { MapScreen() }
 
         // ── Profile, Subscription, Admin ──────────────────────────
         composable(Route.PROFILE) {
