@@ -1,6 +1,7 @@
 package com.padhleyrr.mppsc.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.padhleyrr.mppsc.data.models.ChatMessage
 import com.padhleyrr.mppsc.data.models.Comment
@@ -9,7 +10,7 @@ import com.padhleyrr.mppsc.data.repository.CommunityRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class CommunityViewModel : ViewModel() {
+class CommunityViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── Feed ─────────────────────────────────────────────────────────
     private val _feedTag = MutableStateFlow("all")
@@ -54,9 +55,9 @@ class CommunityViewModel : ViewModel() {
         _posting.value = true
         _postError.value = null
         try {
-            // Upload image first if provided
+            // Upload image first if provided — pass context for ContentResolver
             val uploadedUrl = if (imageUri != null) {
-                CommunityRepository.uploadPostImage(imageUri)
+                CommunityRepository.uploadPostImage(imageUri, getApplication())
             } else ""
             CommunityRepository.createPost(title, body, tag, uploadedUrl)
             onDone()
