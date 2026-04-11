@@ -1,6 +1,8 @@
 package com.padhleyrr.mppsc.ui.screens
 
 import androidx.activity.compose.BackHandler
+import android.Manifest
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -667,9 +669,25 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
 
     val tags = listOf("discussion", "doubt", "resource", "mp", "national")
 
-    val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
-    ) { uri -> imageUri = uri }
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> if (uri != null) imageUri = uri }
+
+    // Runtime permission for Android 13+ (READ_MEDIA_IMAGES)
+    // On Android 12 and below the photo picker doesn't need it.
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) imagePickerLauncher.launch("image/*")
+    }
+
+    fun pickImage() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            imagePickerLauncher.launch("image/*")
+        }
+    }
 
     // Auto-clear error after 4s
     LaunchedEffect(error) {
@@ -801,7 +819,7 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(10.dp))
                         .border(1.5.dp, c.border, RoundedCornerShape(10.dp))
-                        .clickable(enabled = !posting) { imagePickerLauncher.launch("image/*") }
+                        .clickable(enabled = !posting) { pickImage() }
                         .padding(14.dp),
                     verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
