@@ -44,21 +44,25 @@ class CommunityViewModel : ViewModel() {
     fun clearPostError() { _postError.value = null }
 
     fun createPost(
-        title:  String,
-        body:   String,
-        tag:    String,
-        onDone: () -> Unit
+        title:    String,
+        body:     String,
+        tag:      String,
+        imageUri: android.net.Uri? = null,
+        onDone:   () -> Unit
     ) = viewModelScope.launch {
-        if (_posting.value) return@launch  // BUG FIX: prevent double-submit
+        if (_posting.value) return@launch
         _posting.value = true
         _postError.value = null
         try {
-            CommunityRepository.createPost(title, body, tag)
+            // Upload image first if provided
+            val uploadedUrl = if (imageUri != null) {
+                CommunityRepository.uploadPostImage(imageUri)
+            } else ""
+            CommunityRepository.createPost(title, body, tag, uploadedUrl)
             onDone()
         } catch (e: Exception) {
             _postError.value = e.message ?: "Failed to post. Try again."
         } finally {
-            // BUG FIX: always reset posting, even on exception
             _posting.value = false
         }
     }
