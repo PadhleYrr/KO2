@@ -590,12 +590,13 @@ fun ReviewScreen(vm: MainViewModel) {
     val entries by vm.srsEntries.collectAsStateWithLifecycle()
     val now     = System.currentTimeMillis()
 
-    // Snapshot due list once per composition so index is stable
-    val due = remember(entries) { entries.filter { it.nextReview <= now } }
+    // FIX: Snapshot due list ONCE on first load — never reset on entries update
+    // (entries update after submitSrsAnswer was clearing the screen)
+    val due = remember { entries.filter { it.nextReview <= now } }
 
-    var currentDueIdx by remember(due) { mutableStateOf(0) }
+    var currentDueIdx by remember { mutableStateOf(0) }
     // Track answer per question index — avoids state bleeding across cards
-    val answers = remember(due) { mutableStateMapOf<Int, Int>() }
+    val answers = remember { mutableStateMapOf<Int, Int>() }
     val chosen: Int? = answers[currentDueIdx]
 
     val totalInSRS = entries.size
