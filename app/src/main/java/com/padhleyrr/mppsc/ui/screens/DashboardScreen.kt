@@ -194,64 +194,35 @@ fun DashboardScreen(
             Spacer(Modifier.height(14.dp))
         }
 
-        // ── 4. Heatmap + Weak Areas side by side ─────────────────────
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment     = Alignment.Top
-        ) {
-            // Heatmap card
-            GKKCard(modifier = Modifier.weight(1f)) {
+        // ── 4. Weak Areas (full width) ────────────────────────────────
+        GKKCard(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier              = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
                 Text(
-                    "Study Heatmap",
+                    "Weak Areas",
                     fontFamily = Syne, fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp, color = c.text,
-                    modifier = Modifier.padding(bottom = 10.dp)
+                    fontSize = 14.sp, color = c.text
                 )
-                DashHeatmap()
-                Spacer(Modifier.height(6.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    Text("Less", fontSize = 10.sp, color = c.muted)
-                    listOf(0, 1, 2, 3, 4).forEach { l ->
-                        HeatmapCell(level = l, navy = c.navy, modifier = Modifier.size(11.dp))
-                    }
-                    Text("More", fontSize = 10.sp, color = c.muted)
-                }
+                Text(
+                    "See All →",
+                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                    color    = c.saff,
+                    modifier = Modifier.clickable { nav?.navigate(Route.WEAK_AREAS) }
+                )
             }
-
-            // Weak Areas card
-            GKKCard(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier              = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Weak Areas",
-                        fontFamily = Syne, fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp, color = c.text
-                    )
-                    Text(
-                        "See All →",
-                        fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-                        color    = c.saff,
-                        modifier = Modifier.clickable { nav?.navigate(Route.WEAK_AREAS) }
-                    )
-                }
-                if (weakAreas.isEmpty()) {
-                    Text(
-                        "No weak areas yet!\nKeep practising.",
-                        fontSize  = 12.sp, color = c.muted,
-                        textAlign = TextAlign.Center,
-                        modifier  = Modifier.fillMaxWidth().padding(vertical = 12.dp)
-                    )
-                } else {
-                    weakAreas.take(5).forEach { (ch, acc) ->
-                        WeakAreaRow(name = ch, accuracy = acc)
-                    }
+            if (weakAreas.isEmpty()) {
+                Text(
+                    "No weak areas yet! Keep practising.",
+                    fontSize  = 12.sp, color = c.muted,
+                    textAlign = TextAlign.Center,
+                    modifier  = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                )
+            } else {
+                weakAreas.take(5).forEach { (ch, acc) ->
+                    WeakAreaRow(name = ch, accuracy = acc)
                 }
             }
         }
@@ -260,27 +231,4 @@ fun DashboardScreen(
     }
 }
 
-// ── Compact heatmap (26 cols × 6 rows = last ~6 months) ──────────────
-@Composable
-private fun DashHeatmap() {
-    val c    = gkkColors
-    val cols = 13   // trimmed for narrow card
-    val rows = 6
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        repeat(rows) { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                repeat(cols) { col ->
-                    val seed  = row * cols + col
-                    val level = when {
-                        seed % 7 == 0 -> 0
-                        seed % 5 == 0 -> 3
-                        seed % 3 == 0 -> 2
-                        seed % 2 == 0 -> 1
-                        else          -> 0
-                    }
-                    HeatmapCell(level = level, navy = c.navy, modifier = Modifier.size(11.dp))
-                }
-            }
-        }
-    }
-}
+
