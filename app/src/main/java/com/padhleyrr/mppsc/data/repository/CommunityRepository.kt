@@ -1,9 +1,11 @@
 package com.padhleyrr.mppsc.data.repository
 
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
 import com.padhleyrr.mppsc.data.models.ChatMessage
 import com.padhleyrr.mppsc.data.models.Comment
 import com.padhleyrr.mppsc.data.models.CommunityPost
@@ -14,8 +16,9 @@ import kotlinx.coroutines.tasks.await
 
 object CommunityRepository {
 
-    private val db   = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
+    private val db      = FirebaseFirestore.getInstance()
+    private val auth    = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
     private val postsCol = db.collection("communityPosts")
     private val chatCol  = db.collection("globalChat")
@@ -25,6 +28,18 @@ object CommunityRepository {
         ?.takeIf { it.isNotBlank() }
         ?: auth.currentUser?.email?.substringBefore("@")
         ?: "Aspirant"
+
+    // ────────────────────────────────────────────────────────────────
+    //  IMAGE UPLOAD — Firebase Storage
+    // ────────────────────────────────────────────────────────────────
+    suspend fun uploadPostImage(uri: Uri): String {
+        val uid = currentUid()
+        require(uid.isNotEmpty()) { "Must be logged in to upload" }
+        val fileName = "post_images/${uid}_${System.currentTimeMillis()}.jpg"
+        val ref = storage.reference.child(fileName)
+        ref.putFile(uri).await()
+        return ref.downloadUrl.await().toString()
+    }
 
     // ────────────────────────────────────────────────────────────────
     //  POSTS — realtime feed
