@@ -1,11 +1,13 @@
 package com.padhleyrr.mppsc.data.repository
 
+import android.content.Context
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
 import com.padhleyrr.mppsc.data.models.ChatMessage
 import com.padhleyrr.mppsc.data.models.Comment
 import com.padhleyrr.mppsc.data.models.CommunityPost
@@ -32,12 +34,19 @@ object CommunityRepository {
     // ────────────────────────────────────────────────────────────────
     //  IMAGE UPLOAD — Firebase Storage
     // ────────────────────────────────────────────────────────────────
-    suspend fun uploadPostImage(uri: Uri): String {
+    // FIX: Use putStream via ContentResolver — putFile(uri) fails with
+    // "object does not exist" on content:// URIs from the photo picker.
+    suspend fun uploadPostImage(uri: Uri, context: Context): String {
         val uid = currentUid()
         require(uid.isNotEmpty()) { "Must be logged in to upload" }
-        val fileName = "post_images/${uid}_${System.currentTimeMillis()}.jpg"
-        val ref = storage.reference.child(fileName)
-        ref.putFile(uri).await()
+        val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+        val ext      = when (mimeType) { "image/png" -> "png"; "image/webp" -> "webp"; else -> "jpg" }
+        val fileName = "post_images/${uid}_${System.currentTimeMillis()}.$ext"
+        val ref      = storage.reference.child(fileName)
+        val metadata = StorageMetadata.Builder().setContentType(mimeType).build()
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            ref.putStream(stream, metadata).await()
+        } ?: error("Could not open image stream — check permissions")
         return ref.downloadUrl.await().toString()
     }
 
