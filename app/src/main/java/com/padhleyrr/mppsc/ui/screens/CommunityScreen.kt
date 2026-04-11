@@ -1,6 +1,8 @@
 package com.padhleyrr.mppsc.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -24,7 +26,6 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.padhleyrr.mppsc.data.models.ChatMessage
 import com.padhleyrr.mppsc.data.models.Comment
 import com.padhleyrr.mppsc.data.models.CommunityPost
 import com.padhleyrr.mppsc.ui.theme.DMSans
@@ -46,15 +47,11 @@ fun CommunityScreen(vm: CommunityViewModel = viewModel()) {
     var showCompose  by remember { mutableStateOf(false) }
     val c = gkkColors
 
-    // BUG FIX: Handle system back button when in detail or chat tab
+    // Handle system back button when in detail tab
     BackHandler(enabled = tab != 0) {
-        if (tab == 1) {
-            tab = 0
-            selectedPost = null
-            vm.selectPost(null)
-        } else {
-            tab = 0
-        }
+        tab = 0
+        selectedPost = null
+        vm.selectPost(null)
     }
 
     Box(Modifier.fillMaxSize().background(c.bg)) {
@@ -73,51 +70,10 @@ fun CommunityScreen(vm: CommunityViewModel = viewModel()) {
                 post   = selectedPost,
                 onBack = {
                     tab = 0
-                    // BUG FIX: clear selection when navigating back
                     selectedPost = null
                     vm.selectPost(null)
                 }
             )
-            2 -> ChatTab(vm = vm)
-        }
-
-        // Inner bottom nav (Feed / Chat) — hidden on detail screen
-        if (tab != 1) {
-            Column(modifier = Modifier.align(Alignment.BottomCenter)) {
-                HorizontalDivider(color = c.border)
-                NavigationBar(
-                    containerColor = c.card,
-                    tonalElevation = 0.dp,
-                    modifier       = Modifier.height(60.dp)
-                ) {
-                    NavigationBarItem(
-                        selected = tab == 0,
-                        onClick  = { tab = 0 },
-                        icon     = { Icon(Icons.Default.DynamicFeed, null, Modifier.size(20.dp)) },
-                        label    = { Text("Feed", fontFamily = DMSans, fontSize = 11.sp) },
-                        colors   = NavigationBarItemDefaults.colors(
-                            selectedIconColor   = c.saff,
-                            selectedTextColor   = c.saff,
-                            indicatorColor      = c.saff.copy(alpha = 0.12f),
-                            unselectedIconColor = c.muted,
-                            unselectedTextColor = c.muted
-                        )
-                    )
-                    NavigationBarItem(
-                        selected = tab == 2,
-                        onClick  = { tab = 2 },
-                        icon     = { Icon(Icons.Default.Chat, null, Modifier.size(20.dp)) },
-                        label    = { Text("Live Chat", fontFamily = DMSans, fontSize = 11.sp) },
-                        colors   = NavigationBarItemDefaults.colors(
-                            selectedIconColor   = c.saff,
-                            selectedTextColor   = c.saff,
-                            indicatorColor      = c.saff.copy(alpha = 0.12f),
-                            unselectedIconColor = c.muted,
-                            unselectedTextColor = c.muted
-                        )
-                    )
-                }
-            }
         }
 
         // Compose FAB (only on Feed tab)
@@ -128,7 +84,7 @@ fun CommunityScreen(vm: CommunityViewModel = viewModel()) {
                 contentColor   = Color.White,
                 modifier       = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 72.dp)
+                    .padding(end = 16.dp, bottom = 16.dp)
                     .size(52.dp)
             ) {
                 Icon(Icons.Default.Edit, "New Post", Modifier.size(20.dp))
@@ -166,7 +122,7 @@ fun FeedTab(
     )
 
     LazyColumn(
-        modifier       = Modifier.fillMaxSize().padding(bottom = 60.dp),
+        modifier       = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         // Header
@@ -694,177 +650,6 @@ fun CommentCard(comment: Comment, currentUid: String, onLike: () -> Unit) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  CHAT TAB — live group chat
-// ═══════════════════════════════════════════════════════════════════
-
-@Composable
-fun ChatTab(vm: CommunityViewModel) {
-    val c        = gkkColors
-    val messages by vm.chatMessages.collectAsStateWithLifecycle()
-    val sending  by vm.sending.collectAsStateWithLifecycle()
-    var input    by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
-
-    // Auto-scroll to bottom on new message
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
-    }
-
-    Column(Modifier.fillMaxSize().padding(bottom = 60.dp)) {
-        // Header
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Brush.horizontalGradient(listOf(c.navy, Color(0xFF3730A3))))
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(10.dp).clip(CircleShape).background(Color(0xFF4ADE80)))
-                Spacer(Modifier.width(8.dp))
-                Column {
-                    Text("GKK Live Chat", fontFamily = Syne,
-                        fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Color.White)
-                    Text("MPPSC aspirants group · Live",
-                        fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
-                }
-            }
-        }
-
-        // Messages list
-        LazyColumn(
-            state               = listState,
-            modifier            = Modifier.weight(1f).padding(horizontal = 12.dp),
-            contentPadding      = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (messages.isEmpty()) {
-                item {
-                    Box(
-                        Modifier.fillMaxWidth().padding(top = 40.dp),
-                        Alignment.Center
-                    ) {
-                        Text("No messages yet. Say hello! 👋",
-                            fontSize = 13.sp, color = c.muted)
-                    }
-                }
-            }
-            items(messages, key = { it.id }) { msg ->
-                ChatBubble(msg = msg, isOwn = msg.authorUid == vm.currentUid)
-            }
-        }
-
-        // Input bar
-        Surface(color = c.card, shadowElevation = 8.dp) {
-            Row(
-                modifier          = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value         = input,
-                    onValueChange = { input = it },
-                    placeholder   = { Text("Message the group…", fontSize = 13.sp) },
-                    modifier      = Modifier.weight(1f),
-                    shape         = RoundedCornerShape(24.dp),
-                    maxLines      = 4,
-                    textStyle     = LocalTextStyle.current.copy(fontSize = 13.sp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = {
-                        val msg = input.trim()
-                        if (msg.isNotEmpty() && !sending) {
-                            vm.sendMessage(msg)
-                            input = ""
-                        }
-                    }),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor   = c.saff,
-                        unfocusedBorderColor = c.border
-                    )
-                )
-                Spacer(Modifier.width(8.dp))
-                // BUG FIX: Disable send button while sending to prevent duplicates
-                IconButton(
-                    onClick  = {
-                        val msg = input.trim()
-                        if (msg.isNotEmpty() && !sending) {
-                            vm.sendMessage(msg)
-                            input = ""
-                        }
-                    },
-                    enabled  = input.trim().isNotEmpty() && !sending,
-                    modifier = Modifier.size(44.dp).clip(CircleShape)
-                        .background(if (!sending && input.trim().isNotEmpty()) c.saff else c.muted)
-                ) {
-                    if (sending) {
-                        CircularProgressIndicator(
-                            Modifier.size(18.dp),
-                            color       = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(Icons.Default.Send, null,
-                            tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ChatBubble(msg: ChatMessage, isOwn: Boolean) {
-    val c = gkkColors
-    Row(
-        modifier              = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isOwn) Arrangement.End else Arrangement.Start
-    ) {
-        if (!isOwn) {
-            Box(
-                modifier         = Modifier.size(28.dp).clip(CircleShape).background(c.navy),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    msg.authorName.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                    fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold
-                )
-            }
-            Spacer(Modifier.width(6.dp))
-        }
-        Column(horizontalAlignment = if (isOwn) Alignment.End else Alignment.Start) {
-            if (!isOwn) {
-                Text(msg.authorName, fontSize = 10.sp, color = c.muted,
-                    modifier = Modifier.padding(bottom = 2.dp))
-            }
-            Box(
-                modifier = Modifier
-                    .clip(
-                        RoundedCornerShape(
-                            topStart    = if (isOwn) 16.dp else 4.dp,
-                            topEnd      = if (isOwn) 4.dp  else 16.dp,
-                            bottomStart = 16.dp,
-                            bottomEnd   = 16.dp
-                        )
-                    )
-                    .background(if (isOwn) c.saff else c.card)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .widthIn(max = 260.dp)
-            ) {
-                Text(
-                    msg.body,
-                    fontSize   = 13.sp,
-                    color      = if (isOwn) Color.White else c.text,
-                    lineHeight = 18.sp
-                )
-            }
-            Text(
-                relativeTime(msg.createdAt),
-                fontSize = 9.sp, color = c.muted,
-                modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp)
-            )
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════
 //  COMPOSE POST SHEET
 // ═══════════════════════════════════════════════════════════════════
 
@@ -877,13 +662,18 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
     var title   by remember { mutableStateOf("") }
     var body    by remember { mutableStateOf("") }
     var tag     by remember { mutableStateOf("discussion") }
+    var imageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var caption  by remember { mutableStateOf("") }
 
     val tags = listOf("discussion", "doubt", "resource", "mp", "national")
 
-    // BUG FIX: Show error snackbar and clean up error state on dismiss
+    val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri -> imageUri = uri }
+
+    // Auto-clear error after 4s
     LaunchedEffect(error) {
         if (error != null) {
-            // error is shown inline below button; auto-clear after 4 seconds
             kotlinx.coroutines.delay(4_000)
             vm.clearPostError()
         }
@@ -891,7 +681,7 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
 
     ModalBottomSheet(
         onDismissRequest = {
-            if (!posting) onDismiss() // BUG FIX: prevent dismiss while posting
+            if (!posting) onDismiss()
         },
         containerColor = c.card,
         sheetState     = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -900,6 +690,7 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
             Modifier
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             Text("New Post", fontFamily = Syne, fontWeight = FontWeight.ExtraBold,
                 fontSize = 18.sp, color = c.text)
@@ -936,7 +727,7 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
 
             OutlinedTextField(
                 value         = title,
-                onValueChange = { if (it.length <= 300) title = it }, // BUG FIX: enforce title limit
+                onValueChange = { if (it.length <= 300) title = it },
                 label         = { Text("Title * (${title.length}/300)") },
                 modifier      = Modifier.fillMaxWidth(),
                 singleLine    = true,
@@ -951,7 +742,7 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
                 value         = body,
                 onValueChange = { body = it },
                 label         = { Text("Details (optional)") },
-                modifier      = Modifier.fillMaxWidth().heightIn(min = 100.dp),
+                modifier      = Modifier.fillMaxWidth().heightIn(min = 80.dp),
                 maxLines      = 6,
                 enabled       = !posting,
                 colors        = OutlinedTextFieldDefaults.colors(
@@ -960,14 +751,71 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
                 )
             )
 
+            Spacer(Modifier.height(14.dp))
+
+            // ── Image Upload Section ──────────────────────────────────
+            Text("Image (optional)", fontSize = 12.sp, color = c.muted, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+
+            if (imageUri != null) {
+                // Preview selected image
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    AsyncImage(
+                        model              = imageUri,
+                        contentDescription = null,
+                        modifier           = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                    )
+                    // Remove button
+                    IconButton(
+                        onClick  = { imageUri = null; caption = "" },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.6f))
+                    ) {
+                        Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value         = caption,
+                    onValueChange = { if (it.length <= 200) caption = it },
+                    label         = { Text("Caption (${caption.length}/200)") },
+                    modifier      = Modifier.fillMaxWidth(),
+                    singleLine    = true,
+                    enabled       = !posting,
+                    colors        = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor   = c.saff,
+                        unfocusedBorderColor = c.border
+                    )
+                )
+            } else {
+                // Pick image button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(1.5.dp, c.border, RoundedCornerShape(10.dp))
+                        .clickable(enabled = !posting) { imagePickerLauncher.launch("image/*") }
+                        .padding(14.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.Image, null, tint = c.muted, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Tap to add image", fontSize = 13.sp, color = c.muted)
+                }
+            }
+
             // Error message
             if (error != null) {
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    "⚠️ $error",
-                    fontSize = 12.sp,
-                    color    = Color(0xFFDC2626)
-                )
+                Text("⚠️ $error", fontSize = 12.sp, color = Color(0xFFDC2626))
             }
 
             Spacer(Modifier.height(20.dp))
@@ -975,7 +823,13 @@ fun ComposePostSheet(vm: CommunityViewModel, onDismiss: () -> Unit) {
             Button(
                 onClick  = {
                     if (title.isNotBlank() && !posting) {
-                        vm.createPost(title.trim(), body.trim(), tag) { onDismiss() }
+                        vm.createPost(
+                            title    = title.trim(),
+                            body     = if (caption.isNotBlank()) "${body.trim()}\n\n📷 $caption".trim() else body.trim(),
+                            tag      = tag,
+                            imageUri = imageUri,
+                            onDone   = { onDismiss() }
+                        )
                     }
                 },
                 enabled  = title.isNotBlank() && !posting,
